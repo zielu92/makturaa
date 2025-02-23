@@ -93,7 +93,7 @@ class Invoice extends Model
             TextInput::make('no')
                 ->label('Invoice Number')
                 ->autocomplete(false)
-                ->columnSpan(2)
+                ->columnSpan(3)
                 ->required(),
 
             Select::make('type')
@@ -132,7 +132,7 @@ class Invoice extends Model
 
             TextInput::make('place')
                 ->label('Place of Issue')
-                ->columnSpan(2)
+                ->columnSpan(3)
                 ->nullable(),
 
             DatePicker::make('sale_date')
@@ -152,12 +152,12 @@ class Invoice extends Model
 
             TextInput::make('comment')
                 ->label('Comment')
-                ->columnSpan(2)
+                ->columnSpan(3)
                 ->nullable(),
 
             TextInput::make('issuer_name')
                 ->label('Issuer Name')
-                ->columnSpan(2)
+                ->columnSpan(3)
                 ->nullable(),
 
             Repeater::make('items')
