@@ -3,16 +3,17 @@
 namespace App\Models;
 
 use Filament\Forms\Get;
-use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\Select;
+use Filament\Forms\Components\Section;
 use Filament\Forms\Components\Repeater;
+use Filament\Forms\Components\Textarea;
 use Illuminate\Database\Eloquent\Model;
+use Filament\Forms\Components\TextInput;
 use Filament\Forms\Components\DatePicker;
 use Filament\Forms\Components\Placeholder;
-use Filament\Forms\Components\Textarea;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Invoice extends Model
 {
@@ -27,7 +28,6 @@ class Invoice extends Model
         'no',
         'buyer_id',
         'type',
-        'status',
         'payment_status',
         'place',
         'sale_date',
@@ -38,10 +38,10 @@ class Invoice extends Model
         'comment',
         'currency',
         'issuer_name',
-        'total_net',
-        'total_gross',
-        'total_tax',
-        'total_discount',
+        'grand_total_net',
+        'grand_total_gross',
+        'grand_total_tax',
+        'grand_total_discount',
         'paid',
         'due',
         'path',
@@ -96,17 +96,6 @@ class Invoice extends Model
                 ->columnSpan(2)
                 ->required(),
 
-            Select::make('status')
-                ->label('Status')
-                ->columnSpan(2)
-                ->options([
-                    'template' => 'Template',
-                    'published' => 'Published',
-                    'deleted' => 'Deleted',
-                ])
-                ->default('template')
-                ->required(),
-
             Select::make('type')
                 ->label('Invoice Type')
                 ->columnSpan(2)
@@ -133,7 +122,6 @@ class Invoice extends Model
                 })
                 ->relationship('buyer', 'name')
                 ->columnSpan(2)
-                ->searchable()
                 ->preload()
                 ->required(),
 
@@ -191,6 +179,7 @@ class Invoice extends Model
                         ->numeric()
                         ->minValue(1)
                         ->required()
+                        ->afterStateUpdated(fn($state, callable $set, callable $get) => self::updateGrandTotals($set, $get))
                         ->afterStateUpdated(fn($state, callable $set, callable $get) => self::updateTotals($set, $get)),
 
                     TextInput::make('price_net')
@@ -202,6 +191,7 @@ class Invoice extends Model
                         ->minValue(0.01)
                         ->suffix("zł")
                         ->required()
+                        ->afterStateUpdated(fn($state, callable $set, callable $get) => self::updateGrandTotals($set, $get))
                         ->afterStateUpdated(fn($state, callable $set, callable $get) => self::updateTotals($set, $get)),
 
                     Select::make('tax_rate')
@@ -220,8 +210,8 @@ class Invoice extends Model
                         ])
                         ->default('23')
                         ->required()
+                        ->afterStateUpdated(fn($state, callable $set, callable $get) => self::updateGrandTotals($set, $get))
                         ->afterStateUpdated(fn($state, callable $set, callable $get) => self::updateTotals($set, $get)),
-
 
                     TextInput::make('discount')
                         ->label('Discount')
@@ -231,6 +221,7 @@ class Invoice extends Model
                         ->nullable()
                         ->numeric()
                         ->suffix("zł")
+                        ->afterStateUpdated(fn($state, callable $set, callable $get) => self::updateGrandTotals($set, $get))
                         ->afterStateUpdated(fn($state, callable $set, callable $get) => self::updateTotals($set, $get)),
 
                     TextInput::make('price_gross')
@@ -238,40 +229,40 @@ class Invoice extends Model
                         ->numeric()
                         ->columnSpan(2)
                         ->suffix("zł")
-                        ->disabled(),
+                        ->readOnly(),
 
                         TextInput::make('tax_amount')
                         ->label('Tax Amount')
                         ->columnSpan(2)
-                        ->disabled()
+                        ->readOnly()
                         ->suffix("zł")
                         ->numeric(),
 
                     TextInput::make('total_net')
                         ->label('Total Net')
                         ->columnSpan(3)
-                        ->disabled()
+                        ->readOnly()
                         ->suffix("zł")
                         ->numeric(),
 
                     TextInput::make('total_gross')
                         ->label('Total Gross')
                         ->columnSpan(3)
-                        ->disabled()
+                        ->readOnly()
                         ->suffix("zł")
                         ->numeric(),
 
                     TextInput::make('total_tax')
                         ->label('Total Tax')
                         ->columnSpan(3)
-                        ->disabled()
+                        ->readOnly()
                         ->suffix("zł")
                         ->numeric(),
 
                     TextInput::make('total_discount')
                         ->label('Total Discount')
                         ->columnSpan(3)
-                        ->disabled()
+                        ->readOnly()
                         ->suffix("zł")
                         ->numeric(),
                 ])
@@ -280,75 +271,72 @@ class Invoice extends Model
                 ->cloneable()
                 ->relationship('InvoiceItems')
                 ->required(),
-                Placeholder::make('total_summary')
-                    ->label('Total Summary')
-                    ->columnSpanFull(),
+                Section::make("Grand total summary")
+                ->columns(12)
+                ->schema([
+                    Placeholder::make('grand_total_net')
+                        ->label('Grand Total Net')
+                        ->content(fn(Get $get) => number_format($get('grand_total_net') ?? 0, 2) . ' zł')
+                        ->columnSpan(3),
 
-                Placeholder::make('grand_total_net')
-                    ->label('Total Net')
-                    ->content(fn(Get $get) => number_format($get('grand_total_net') ?? 0, 2) . ' zł')
-                    ->columnSpan(3),
+                    Placeholder::make('grand_total_tax')
+                        ->label('Grand Total Tax')
+                        ->content(fn(Get $get) => number_format($get('grand_total_tax') ?? 0, 2) . ' zł')
+                        ->columnSpan(3),
 
-                Placeholder::make('grand_total_tax')
-                    ->label('Total Tax')
-                    ->content(fn(Get $get) => number_format($get('grand_total_tax') ?? 0, 2) . ' zł')
-                    ->columnSpan(3),
+                    Placeholder::make('grand_total_gross')
+                        ->label('Grand Total Gross')
+                        ->content(fn(Get $get) => number_format($get('grand_total_gross') ?? 0, 2) . ' zł')
+                        ->columnSpan(3),
 
-                Placeholder::make('grand_total_gross')
-                    ->label('Total Gross')
-                    ->content(fn(Get $get) => number_format($get('grand_total_gross') ?? 0, 2) . ' zł')
-                    ->columnSpan(3),
-
-                Placeholder::make('grand_total_discount')
-                    ->label('Total Discount')
-                    ->content(fn(Get $get) => number_format($get('grand_total_discount') ?? 0, 2) . ' zł')
-                    ->columnSpan(3),
-                ];
+                    Placeholder::make('grand_total_discount')
+                        ->label('Grand Total Discount')
+                        ->content(fn(Get $get) => number_format($get('grand_total_discount') ?? 0, 2) . ' zł')
+                        ->columnSpan(3),
+                ]),
+            ];
     }
 
-    public static function updateTotals(callable $set, callable $get): void
+
+    public static function updateTotals(callable $set, callable $get): array
     {
         // Ensure values are numeric and default to 0 if not
         $quantity = is_numeric($get('quantity')) ? (int) $get('quantity') : 0;
         $priceNet = is_numeric($get('price_net')) ? (float) $get('price_net') : 0.00;
         $discount = is_numeric($get('discount')) ? (float) $get('discount') : 0.00;
-        $priceGross = is_numeric($get('price_net')) ? (float) $get('price_net') : 0.00;
         $taxRate = $get('tax_rate') ?? '23';
-        $taxAmount = 0;
-
-        // Calculate total net
-        $totalNet = max(($quantity * $priceNet) - $discount, 0);
 
         // Determine the tax rate
         $taxPercentage = in_array($taxRate, ['zw', 'np']) ? 0 : (int) $taxRate;
 
-        // Calculate total tax
+        // Calculate values
+        $totalNet = max(($quantity * $priceNet) - $discount, 0);
         $totalTax = round(($totalNet * $taxPercentage) / 100, 2);
-
-        //calculate price gross
-        $priceGross = round(($priceNet-$discount) + (($priceNet * $taxPercentage) / 100), 2);
-
-        //calculate tax amount
-        $taxAmount = round((($priceNet-$discount) * $taxPercentage) / 100, 2);
-
-        // Calculate total gross
+        $priceGross = round(($priceNet - $discount) + (($priceNet * $taxPercentage) / 100), 2);
+        $taxAmount = round((($priceNet - $discount) * $taxPercentage) / 100, 2);
         $totalGross = round($totalNet + $totalTax, 2);
-
-        // Round values to 2 decimal places
-        $totalNet = round($totalNet, 2);
         $discount = round($discount, 2);
 
-        // Update the fields
-        $set('price_gross', $priceGross);
-        $set('tax_amount', $taxAmount);
-        $set('total_net', $totalNet);
-        $set('total_tax', $totalTax);
-        $set('total_gross', $totalGross);
-        $set('total_discount', $discount);
+        // Create a mapping of keys to values
+        $fields = [
+            'price_gross'    => $priceGross,
+            'tax_amount'     => $taxAmount,
+            'total_net'      => $totalNet,
+            'total_tax'      => $totalTax,
+            'total_gross'    => $totalGross,
+            'total_discount' => $discount,
+        ];
 
+        // Iterate and set values dynamically
+        foreach ($fields as $key => $value) {
+            $set($key, $value);
+        }
         // Call grand totals update
         self::updateGrandTotals($set, $get);
+
+        return $fields;
     }
+
 
     public static function updateGrandTotals(callable $set, callable $get): void
     {
@@ -392,7 +380,4 @@ class Invoice extends Model
         $set('grand_total_gross', $totalGross);
         $set('grand_total_discount', $totalDiscount);
     }
-
-
-
 }

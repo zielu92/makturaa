@@ -5,10 +5,12 @@ namespace App\Filament\Resources;
 use Filament\Forms;
 use Filament\Tables;
 use App\Models\Invoice;
+use Filament\Forms\Get;
+use App\Models\InvoiceItem;
 use Filament\Resources\Resource;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Model;
 use App\Filament\Resources\InvoiceResource\Pages;
-use App\Models\InvoiceItem;
 
 class InvoiceResource extends Resource
 {
@@ -35,23 +37,36 @@ class InvoiceResource extends Resource
                 Tables\Columns\TextColumn::make('buyer.name')
                     ->label('Buyer'),
 
-                Tables\Columns\TextColumn::make('status')
-                    ->label('Status')
+                Tables\Columns\TextColumn::make('type')
+                    ->label('Type')
+                    ->badge()
                     ->sortable(),
 
-                Tables\Columns\TextColumn::make('payment_status')
-                    ->label('Payment Status'),
+                Tables\Columns\IconColumn::make('payment_status')
+                    ->label('Payment Status')
+                    ->alignCenter()
+                    ->color(function($state){
+                        return $state=="paid" ? 'success' : 'danger';
+                    })
+                    ->icon(function($state){
+                        return $state=="paid" ? 'heroicon-o-check-circle' : 'heroicon-o-x-circle';
+                    }),
 
-                Tables\Columns\TextColumn::make('total_gross')
-                    ->label('Total Gross')
+                Tables\Columns\TextColumn::make('grand_total_gross')
+                    ->label('Grand Total Gross')
+                    ->alignEnd()
+                    ->numeric()
+                    ->sortable(),
+                Tables\Columns\TextColumn::make('created_at')
+                    ->label('Created')
+                    ->dateTime()
                     ->sortable(),
             ])
             ->filters([
-                Tables\Filters\SelectFilter::make('status')
+                Tables\Filters\SelectFilter::make('payment_status')
                     ->options([
-                        'template' => 'Template',
-                        'published' => 'Published',
-                        'deleted' => 'Deleted',
+                        'paid' => 'Paid',
+                        'notpaid' => 'Not paid',
                     ]),
             ]);
     }
@@ -63,32 +78,6 @@ class InvoiceResource extends Resource
         ];
     }
 
-    protected function handleRecordCreation(array $data): Model
-    {
-        $invoice = static::getModel()::create($data);
-
-        foreach ($data['items'] as $item) {
-
-            InvoiceItem::updateOrCreate(
-                [
-                    'invoice_id' => $invoice->id,
-                    'id' => $item['id'] ?? null,
-                ],
-                [
-                    'name' => $item['name'],
-                    'quantity' => $item['quantity'],
-                    'price_net' => $item['price_net'],
-                    'tax_rate' => $item['tax_rate'],
-                    'discount' => $item['discount'],
-                    'total_net' => $item['total_net'],
-                    'total_gross' => $item['total_gross'],
-                    'total_tax' => $item['total_tax'],
-                    'total_discount' => $item['total_discount']
-                ]
-            );
-        }
-        return $invoice;
-    }
 
     public static function getPages(): array
     {

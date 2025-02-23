@@ -18,7 +18,6 @@ return new class extends Migration
             $table->string('no');
             $table->foreignId('buyer_id')->constrained();
             $table->string('type');
-            $table->string('status');
             $table->string('payment_status');
             $table->string('place')->nullable();
             $table->date('sale_date')->nullable();
@@ -29,10 +28,10 @@ return new class extends Migration
             $table->string('comment')->nullable();
             $table->string('currency')->default('EUR');
             $table->string('issuer_name')->nullable();
-            $table->decimal('total_net', 10, 2)->default(0);
-            $table->decimal('total_gross', 10, 2)->default(0);
-            $table->decimal('total_tax', 10, 2)->default(0);
-            $table->decimal('total_discount', 10, 2)->default(0);
+            $table->decimal('grand_total_net', 10, 2)->default(0);
+            $table->decimal('grand_total_gross', 10, 2)->default(0);
+            $table->decimal('grand_total_tax', 10, 2)->default(0);
+            $table->decimal('grand_total_discount', 10, 2)->default(0);
             $table->decimal('paid', 10, 2)->default(0);
             $table->decimal('due', 10, 2)->default(0);
             $table->string('path')->nullable();

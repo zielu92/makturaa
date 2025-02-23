@@ -2,9 +2,11 @@
 
 namespace App\Filament\Resources\InvoiceResource\Pages;
 
-use App\Filament\Resources\InvoiceResource;
 use Filament\Actions;
+use App\Models\Invoice;
 use Filament\Resources\Pages\EditRecord;
+use App\Filament\Resources\InvoiceResource;
+use App\Models\InvoiceItem;
 
 class EditInvoice extends EditRecord
 {
@@ -15,5 +17,26 @@ class EditInvoice extends EditRecord
         return [
             Actions\DeleteAction::make(),
         ];
+    }
+
+    public function afterSave(): void
+    {
+        $invoice = $this->record;
+        $totals = [
+            'grand_total_net' => 0,
+            'grand_total_tax' => 0,
+            'grand_total_gross' => 0,
+            'grand_total_discount' => 0,
+        ];
+
+        foreach ($invoice->invoiceItems as $item) {
+            // Accumulate totals
+            $totals['grand_total_net'] += $item['total_net'];
+            $totals['grand_total_tax'] += $item['total_tax'];
+            $totals['grand_total_gross'] += $item['total_gross'];
+            $totals['grand_total_discount'] += $item['total_discount'];
+        }
+
+        $invoice->update($totals);
     }
 }

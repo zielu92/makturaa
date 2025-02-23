@@ -15,10 +15,10 @@ models:
     comment: string nullable
     currency: string length:4 default:EUR
     issuer_name: string nullable
-    total_net: decimal:10,2 default:0
-    total_gross: decimal:10,2 default:0
-    total_tax: decimal:10,2 default:0
-    total_discount: decimal:10,2 default:0
+    grand_total_net: decimal:10,2 default:0
+    grand_total_gross: decimal:10,2 default:0
+    grand_total_tax: decimal:10,2 default:0
+    grand_total_discount: decimal:10,2 default:0
     paid: decimal:10,2 default:0
     due: decimal:10,2 default:0
     path: string nullable
