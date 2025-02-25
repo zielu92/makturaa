@@ -18,6 +18,11 @@ class CreateInvoice extends CreateRecord
         return $data;
     }
 
+    protected function beforeFill(): void
+    {
+        // Runs before the form fields are populated with their default values.
+    }
+
     protected function afterCreate(): void
     {
         $invoice = $this->record;

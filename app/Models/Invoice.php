@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use Carbon\Carbon;
 use Filament\Forms\Get;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Section;
@@ -14,6 +15,7 @@ use Filament\Forms\Components\Placeholder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Support\Str;
 
 class Invoice extends Model
 {
@@ -94,7 +96,35 @@ class Invoice extends Model
                 ->label('Invoice Number')
                 ->autocomplete(false)
                 ->columnSpan(3)
-                ->required(),
+                ->required()
+                ->default(function ()  {
+                    $defaultNumberFormat = setting('invoice.default_pattern');
+                    if($defaultNumberFormat) {
+                        $now = Carbon::now();
+                        $month = $now->format('m');
+                        $year = $now->format('Y');
+
+                        $previousThisMonth = Invoice::query()
+                                ->whereMonth('created_at', $month)
+                                ->whereYear('created_at', $year)
+                                ->count() + 1;
+                        $previousThisYear = Invoice::query()
+                                ->whereYear('created_at', $year)
+                                ->count() + 1;
+
+                        $random = Str::random(5);
+
+                        $replacements = [
+                            '{nm}' => $previousThisMonth,
+                            '{ny}' => $previousThisYear,
+                            '{m}' => $month,
+                            '{y}' => $year,
+                            '{random}' => $random,
+                        ];
+                        return str_replace(array_keys($replacements), array_values($replacements), $defaultNumberFormat);
+                    }
+                    return Str::random(5);
+                }),
 
             Select::make('type')
                 ->label('Invoice Type')
@@ -133,20 +163,24 @@ class Invoice extends Model
             TextInput::make('place')
                 ->label('Place of Issue')
                 ->columnSpan(3)
+                ->default(setting('invoice.default_place'))
                 ->nullable(),
 
             DatePicker::make('sale_date')
                 ->label('Sale Date')
+                ->default(now())
                 ->columnSpan(2)
                 ->nullable(),
 
             DatePicker::make('issue_date')
                 ->label('Issue Date')
+                ->default(now())
                 ->columnSpan(2)
                 ->required(),
 
             DatePicker::make('due_date')
                 ->label('Due Date')
+                ->default(now()->addDays(14))
                 ->columnSpan(2)
                 ->required(),
 
@@ -157,6 +191,7 @@ class Invoice extends Model
 
             TextInput::make('issuer_name')
                 ->label('Issuer Name')
+                ->default(setting('invoice.default_issuer'))
                 ->columnSpan(3)
                 ->nullable(),
 
@@ -175,7 +210,7 @@ class Invoice extends Model
                         ->label('Quantity')
                         ->columnSpan(1)
                         ->lazy()
-                        ->debounce(500)
+                        ->debounce()
                         ->numeric()
                         ->minValue(1)
                         ->required()
@@ -186,7 +221,7 @@ class Invoice extends Model
                         ->label('Net Price')
                         ->numeric()
                         ->lazy()
-                        ->debounce(500)
+                        ->debounce()
                         ->columnSpan(2)
                         ->minValue(0.01)
                         ->suffix("zł")
@@ -198,7 +233,8 @@ class Invoice extends Model
                         ->label('Tax Rate')
                         ->columnSpan(1)
                         ->lazy()
-                        ->debounce(500)
+                        ->debounce()
+                        ->default(setting('invoice.default_tax_rate'))
                         ->options([
                             '23' => '23%',
                             '22' => '22%',
@@ -208,7 +244,6 @@ class Invoice extends Model
                             'zw' => 'Exempt',
                             'np' => 'Not Applicable',
                         ])
-                        ->default('23')
                         ->required()
                         ->afterStateUpdated(fn($state, callable $set, callable $get) => self::updateGrandTotals($set, $get))
                         ->afterStateUpdated(fn($state, callable $set, callable $get) => self::updateTotals($set, $get)),
@@ -216,7 +251,7 @@ class Invoice extends Model
                     TextInput::make('discount')
                         ->label('Discount')
                         ->lazy()
-                        ->debounce(500)
+                        ->debounce()
                         ->columnSpan(2)
                         ->nullable()
                         ->numeric()

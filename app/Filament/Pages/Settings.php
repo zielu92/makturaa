@@ -79,6 +79,7 @@ class Settings extends BaseSettings
                         TextInput::make('invoice.default_pattern')
                             ->label('Default Invoice Generation Pattern')
                             ->maxLength(255)
+                            ->placeholder('{nm}/{m}/{y}')
                             ->default('{nm}/{m}/{y}')
                             ->helperText("
                                 {nm} - Previous invoice number this month;
