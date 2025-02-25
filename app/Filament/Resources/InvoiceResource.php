@@ -38,7 +38,7 @@ class InvoiceResource extends Resource
                     ->sortable()
                     ->searchable(),
 
-                Tables\Columns\TextColumn::make('buyer.name')
+                Tables\Columns\TextColumn::make('invoiceBuyer.name')
                     ->label('Buyer'),
 
                 Tables\Columns\TextColumn::make('type')

@@ -15,6 +15,7 @@ use Filament\Forms\Components\Placeholder;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 class Invoice extends Model
@@ -72,6 +73,11 @@ class Invoice extends Model
     public function buyer(): BelongsTo
     {
         return $this->belongsTo(Buyer::class);
+    }
+
+    public function invoiceBuyer(): HasOne
+    {
+        return $this->hasOne(InvoiceBuyer::class);
     }
 
     public function parent(): BelongsTo
