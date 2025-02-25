@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\InvoiceResource\Pages;
 
+use App\Models\Buyer;
+use App\Models\InvoiceBuyer;
 use Filament\Actions;
 use App\Models\InvoiceItem;
 use Filament\Resources\Pages\CreateRecord;
@@ -42,5 +44,9 @@ class CreateInvoice extends CreateRecord
         }
 
         $invoice->update($totals);
+        //copy buyer data to invoice
+        $buyer = Buyer::find($invoice->buyer_id);
+        $buyer->invoice_id = $invoice->id;
+        InvoiceBuyer::create($buyer->toArray());
     }
 }

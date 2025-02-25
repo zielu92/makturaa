@@ -2,6 +2,8 @@
 
 namespace App\Filament\Resources\InvoiceResource\Pages;
 
+use App\Models\Buyer;
+use App\Models\InvoiceBuyer;
 use Filament\Actions;
 use App\Models\Invoice;
 use Filament\Resources\Pages\EditRecord;
@@ -38,5 +40,11 @@ class EditInvoice extends EditRecord
         }
 
         $invoice->update($totals);
+
+        //copy buyer data to invoice
+        $invoice->invoiceBuyer->delete();
+        $buyer = Buyer::find($invoice->buyer_id);
+        $buyer->invoice_id = $invoice->id;
+        InvoiceBuyer::create($buyer->toArray());
     }
 }
