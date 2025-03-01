@@ -41,7 +41,7 @@ class AppPanelProvider extends PanelProvider
             ])
             ->navigationGroups([
                 NavigationGroup::make('Invoices')->icon('heroicon-o-document-currency-dollar'),
-                NavigationGroup::make('Taxes')->icon('heroicon-o-fire')
+                NavigationGroup::make('Costs')->icon('heroicon-o-fire')
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
