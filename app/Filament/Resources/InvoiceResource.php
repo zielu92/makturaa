@@ -2,6 +2,7 @@
 
 namespace App\Filament\Resources;
 
+use App\Models\Currency;
 use Filament\Forms;
 use Filament\Tables;
 use App\Models\Invoice;
@@ -60,6 +61,9 @@ class InvoiceResource extends Resource
                     ->label('Grand Total Gross')
                     ->alignEnd()
                     ->numeric()
+                    ->suffix(function($record) {
+                        return ' ' . Currency::find($record->currency_id)->code;
+                    })
                     ->sortable(),
                 Tables\Columns\TextColumn::make('created_at')
                     ->label('Created')

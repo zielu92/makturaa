@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Carbon\Carbon;
+use Filament\Forms\Components\Hidden;
 use Filament\Forms\Get;
 use Filament\Forms\Components\Select;
 use Filament\Forms\Components\Section;
@@ -17,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
+use Outerweb\Settings\Models\Setting;
 
 class Invoice extends Model
 {
@@ -48,6 +50,7 @@ class Invoice extends Model
         'paid',
         'due',
         'path',
+        'currency_id'
     ];
 
     /**
@@ -73,6 +76,11 @@ class Invoice extends Model
     public function buyer(): BelongsTo
     {
         return $this->belongsTo(Buyer::class);
+    }
+
+    public function currency(): BelongsTo
+    {
+        return $this->belongsTo(Currency::class);
     }
 
     public function invoiceBuyer(): HasOne
@@ -152,6 +160,28 @@ class Invoice extends Model
                 ->default('notpaid')
                 ->required(),
 
+            Select::make('currency_id')
+                ->label('Currency')
+                ->columnSpan(1)
+                ->live()
+                ->options(
+                    Currency::whereIn('id', setting('general.currencies'))->get()->pluck('code', 'id')
+                )
+                ->default(Currency::find(setting('general.default_currency'))->id)
+                ->afterStateUpdated(function ($state, callable $set) use (&$currencySymbol) {
+                    $currency = Currency::find($state);
+                    $currencySymbol = $currency ? $currency->code : '';
+                    $set('currency_code', $currencySymbol);
+                })
+                ->required(),
+
+            Hidden::make('currency_code')
+                ->default(function () {
+                    $defaultCurrencyId = Currency::find(setting('general.default_currency'))->id;
+                    $currency = Currency::find($defaultCurrencyId);
+                    return $currency ? $currency->code : '';
+                }),
+
             Select::make('buyer_id')
                 ->hidden(function() use ($buyerId) {
                     return $buyerId !== null;
@@ -168,7 +198,7 @@ class Invoice extends Model
 
             TextInput::make('place')
                 ->label('Place of Issue')
-                ->columnSpan(3)
+                ->columnSpan(2)
                 ->default(setting('invoice.default_place'))
                 ->nullable(),
 
@@ -230,7 +260,7 @@ class Invoice extends Model
                         ->debounce()
                         ->columnSpan(2)
                         ->minValue(0.01)
-                        ->suffix("zł")
+                        ->suffix(fn(Get $get) => $get('../../currency_code'))
                         ->required()
                         ->afterStateUpdated(fn($state, callable $set, callable $get) => self::updateGrandTotals($set, $get))
                         ->afterStateUpdated(fn($state, callable $set, callable $get) => self::updateTotals($set, $get)),
@@ -261,7 +291,7 @@ class Invoice extends Model
                         ->columnSpan(2)
                         ->nullable()
                         ->numeric()
-                        ->suffix("zł")
+                        ->suffix(fn(Get $get) => $get('../../currency_code'))
                         ->afterStateUpdated(fn($state, callable $set, callable $get) => self::updateGrandTotals($set, $get))
                         ->afterStateUpdated(fn($state, callable $set, callable $get) => self::updateTotals($set, $get)),
 
@@ -269,42 +299,42 @@ class Invoice extends Model
                         ->label('Gross Price')
                         ->numeric()
                         ->columnSpan(2)
-                        ->suffix("zł")
+                        ->suffix(fn(Get $get) => $get('../../currency_code'))
                         ->readOnly(),
 
                         TextInput::make('tax_amount')
                         ->label('Tax Amount')
                         ->columnSpan(2)
                         ->readOnly()
-                        ->suffix("zł")
+                            ->suffix(fn(Get $get) => $get('../../currency_code'))
                         ->numeric(),
 
                     TextInput::make('total_net')
                         ->label('Total Net')
                         ->columnSpan(3)
                         ->readOnly()
-                        ->suffix("zł")
+                        ->suffix(fn(Get $get) => $get('../../currency_code'))
                         ->numeric(),
 
                     TextInput::make('total_gross')
                         ->label('Total Gross')
                         ->columnSpan(3)
                         ->readOnly()
-                        ->suffix("zł")
+                        ->suffix(fn(Get $get) => $get('../../currency_code'))
                         ->numeric(),
 
                     TextInput::make('total_tax')
                         ->label('Total Tax')
                         ->columnSpan(3)
                         ->readOnly()
-                        ->suffix("zł")
+                        ->suffix(fn(Get $get) => $get('../../currency_code'))
                         ->numeric(),
 
                     TextInput::make('total_discount')
                         ->label('Total Discount')
                         ->columnSpan(3)
                         ->readOnly()
-                        ->suffix("zł")
+                        ->suffix(fn(Get $get) => $get('../../currency_code'))
                         ->numeric(),
                 ])
                 ->afterStateUpdated(fn($state, callable $set, callable $get) => self::updateGrandTotals($set, $get))
@@ -317,22 +347,22 @@ class Invoice extends Model
                 ->schema([
                     Placeholder::make('grand_total_net')
                         ->label('Grand Total Net')
-                        ->content(fn(Get $get) => number_format($get('grand_total_net') ?? 0, 2) . ' zł')
+                        ->content(fn(Get $get) => number_format($get('grand_total_net') ?? 0, 2) . ' '.$get('currency_code'))
                         ->columnSpan(3),
 
                     Placeholder::make('grand_total_tax')
                         ->label('Grand Total Tax')
-                        ->content(fn(Get $get) => number_format($get('grand_total_tax') ?? 0, 2) . ' zł')
+                        ->content(fn(Get $get) => number_format($get('grand_total_tax') ?? 0, 2) . ' '.$get('currency_code'))
                         ->columnSpan(3),
 
                     Placeholder::make('grand_total_gross')
                         ->label('Grand Total Gross')
-                        ->content(fn(Get $get) => number_format($get('grand_total_gross') ?? 0, 2) . ' zł')
+                        ->content(fn(Get $get) => number_format($get('grand_total_gross') ?? 0, 2) . ' '.$get('currency_code'))
                         ->columnSpan(3),
 
                     Placeholder::make('grand_total_discount')
                         ->label('Grand Total Discount')
-                        ->content(fn(Get $get) => number_format($get('grand_total_discount') ?? 0, 2) . ' zł')
+                        ->content(fn(Get $get) => number_format($get('grand_total_discount') ?? 0, 2) . ' '.$get('currency_code'))
                         ->columnSpan(3),
                 ]),
             ];
