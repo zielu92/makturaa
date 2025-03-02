@@ -2,6 +2,7 @@
 
 namespace App\Filament\Pages;
 
+use App\Models\Currency;
 use Closure;
 use Filament\Forms\Components\Tabs;
 use Filament\Forms\Components\Select;
@@ -25,15 +26,12 @@ class Settings extends BaseSettings
                                 ->live()
                                 ->label('Basic currencies')
                                 ->multiple()
-                                ->options(getCurrencies()),
+                                ->options(Currency::all()->pluck('code', 'id')),
                             Select::make('general.default_currency')
                                 ->label('Default Currency')
                                 ->options(function (Get $get) {
-                                    $options = [];
-                                    foreach ($get('general.currencies') as $currencyIndex) {
-                                        $options[] = getCurrencyByIndex($currencyIndex);
-                                    }
-                                    return $options;
+                                    return Currency::whereIn('id', $get('general.currencies'))->get()->pluck('code', 'id');
+
                                 }),
                         ]),
                     Tabs\Tab::make('Seller')
@@ -84,7 +82,7 @@ class Settings extends BaseSettings
                                 ->maxLength(255)
                                 ->required(),
                             Select::make('invoice.default_tax_rate')
-                                ->label('Default VAT')
+                                ->label('Default VAT rate')
                                 ->options([
                                     '23' => '23%',
                                     '22' => '22%',
