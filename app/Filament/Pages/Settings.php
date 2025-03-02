@@ -31,7 +31,6 @@ class Settings extends BaseSettings
                                 ->label('Default Currency')
                                 ->options(function (Get $get) {
                                     return Currency::whereIn('id', $get('general.currencies'))->get()->pluck('code', 'id');
-
                                 }),
                         ]),
                     Tabs\Tab::make('Seller')
@@ -43,7 +42,7 @@ class Settings extends BaseSettings
                                 ->label('Company Address (Street)')
                                 ->maxLength(255)
                                 ->required(),
-                            TextInput::make('seller.scity')
+                            TextInput::make('seller.city')
                                 ->label('Company Address (City)')
                                 ->maxLength(255)
                                 ->required(),
