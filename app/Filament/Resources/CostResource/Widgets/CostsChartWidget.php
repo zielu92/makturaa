@@ -3,6 +3,7 @@
 namespace App\Filament\Resources\CostResource\Widgets;
 
 use App\Filament\Resources\CostResource\Pages\ListCosts;
+use App\Models\Cost;
 use Filament\Widgets\ChartWidget;
 use Filament\Widgets\Concerns\InteractsWithPageTable;
 use Flowframe\Trend\Trend;
@@ -19,6 +20,11 @@ class CostsChartWidget extends ChartWidget
     protected static ?string $pollingInterval = '1s';
 
     public ?string $filter = 'month';
+
+    public static function canView(): bool
+    {
+        return Cost::select('id')->get()->count() > 0;
+    }
 
     protected function getFilters(): ?array
     {
@@ -52,6 +58,7 @@ class CostsChartWidget extends ChartWidget
                     end: now(),
                 )
                 ->perDay()
+                ->dateColumn('payment_date')
                 ->sum('amount'),
             '1Year' => Trend::query($this->getPageTableQuery())
                 ->between(
