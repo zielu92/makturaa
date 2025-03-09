@@ -9,9 +9,11 @@ use App\Models\Invoice;
 use Filament\Forms\Get;
 use App\Models\InvoiceItem;
 use Filament\Resources\Resource;
+use Filament\Tables\Actions\Action;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Database\Eloquent\Model;
 use App\Filament\Resources\InvoiceResource\Pages;
+use Illuminate\Support\Facades\URL;
 
 class InvoiceResource extends Resource
 {
@@ -69,6 +71,13 @@ class InvoiceResource extends Resource
                     ->label('Created')
                     ->dateTime()
                     ->sortable(),
+            ])
+            ->actions([
+                Action::make('Download PDF')
+                    ->icon('heroicon-o-document-text')
+                    ->label('Download')
+                    ->url(fn ($record) => URL::route('invoices.show', $record->id))
+                    ->openUrlInNewTab(),
             ])
             ->filters([
                 Tables\Filters\SelectFilter::make('payment_status')

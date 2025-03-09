@@ -61,7 +61,6 @@ class Invoice extends Model
     protected $casts = [
         'id' => 'integer',
         'buyer_id' => 'integer',
-        'sale_date' => 'date',
         'due_date' => 'date',
         'parent_id' => 'integer',
         'user_id' => 'integer',
