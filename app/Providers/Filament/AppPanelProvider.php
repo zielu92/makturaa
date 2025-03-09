@@ -2,6 +2,7 @@
 
 namespace App\Providers\Filament;
 
+use Coolsam\Modules\ModulesPlugin;
 use Filament\Pages;
 use Filament\Panel;
 use Filament\PanelProvider;
@@ -41,7 +42,8 @@ class AppPanelProvider extends PanelProvider
             ])
             ->navigationGroups([
                 NavigationGroup::make('Invoices')->icon('heroicon-o-document-currency-dollar'),
-                NavigationGroup::make('Costs')->icon('heroicon-o-fire')
+                NavigationGroup::make('Costs')->icon('heroicon-o-fire'),
+                NavigationGroup::make('Payment Methods')->icon('heroicon-o-credit-card')
             ])
             ->discoverWidgets(in: app_path('Filament/Widgets'), for: 'App\\Filament\\Widgets')
             ->widgets([
@@ -63,6 +65,7 @@ class AppPanelProvider extends PanelProvider
             ])
             ->sidebarCollapsibleOnDesktop()
             ->plugins([
+                ModulesPlugin::make(),
                 FilamentSettingsPlugin::make()
                     ->pages([
                         Settings::class,

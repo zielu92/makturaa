@@ -7,11 +7,13 @@
     "license": "MIT",
     "require": {
         "php": "^8.2",
+        "coolsam/modules": "^4",
         "filament/actions": "^3.2",
         "filament/filament": "^3.2",
         "flowframe/laravel-trend": "^0.4.0",
         "laravel/framework": "^11.31",
         "laravel/tinker": "^2.9",
+        "nwidart/laravel-modules": "^v11.1.10",
         "outerweb/filament-settings": "^1.2",
         "spatie/laravel-pdf": "^1.5"
     },
@@ -68,6 +70,11 @@
             "dont-discover": [
                 "laravel/telescope"
             ]
+        },
+        "merge-plugin": {
+            "include": [
+                "Modules/*/composer.json"
+            ]
         }
     },
     "config": {
@@ -76,7 +83,8 @@
         "sort-packages": true,
         "allow-plugins": {
             "pestphp/pest-plugin": true,
-            "php-http/discovery": true
+            "php-http/discovery": true,
+            "wikimedia/composer-merge-plugin": true
         }
     },
     "minimum-stability": "stable",
